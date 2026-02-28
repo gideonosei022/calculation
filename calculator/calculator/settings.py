@@ -21,12 +21,13 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-cgw%__osoy5$j(!ss60xdzm0xn3rq$wwz1w4-9l59hntgz(nut'
+SECRET_KEY = os.environ.get("SECRET_KEY", "unsafe-default-key-for-dev")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = False
+DEBUG = os.environ.get("DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
+
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1").split(",")
 
 
 # Application definition
@@ -78,23 +79,14 @@ WSGI_APPLICATION = 'calculator.wsgi.application'
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
 
-if "DATABASE_URL" in os.environ:
-    # Use the database provided by Heroku
-    DATABASES = {
-        "default": dj_database_url.config(conn_max_age=600, ssl_require=False)
-    }
-else:
-    # Local PostgreSQL database
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",  # must specify PostgreSQL engine
-            "NAME": "gideon",                           # database name you created
-            "USER": "gideon_user",                      # database user
-            "PASSWORD": "General@1998",                 # user password
-            "HOST": "localhost",                        # PostgreSQL server
-            "PORT": "5432",                             # default PostgreSQL port
-        }
-    }
+DATABASES = {
+    "default": dj_database_url.config(
+        default="postgres://gideon_user:General@1998@localhost:5432/gideon",
+        conn_max_age=600,
+        ssl_require=not DEBUG,
+    )
+}
+
 
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
@@ -137,10 +129,12 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 
-SECURE_SSL_REDIRECT = True
-SESSION_COOKIE_SECURE = True
-CSRF_COOKIE_SECURE = True
-
-SECURE_HSTS_SECONDS = 31536000
-SECURE_HSTS_INCLUDE_SUBDOMAINS = True
-SECURE_HSTS_PRELOAD = True
+if not DEBUG:
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+else:
+    SECURE_SSL_REDIRECT = False
